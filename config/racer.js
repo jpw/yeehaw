@@ -10,5 +10,5 @@ module.exports = Object.freeze({
     POSSIBLE_MOVES_PER_TICK: [
         0, 0, 0, 1, 1, 1, 1, 1, 2, 2
     ],
-    HUMAN_NAMES: true
+    HUMAN_NAMES: false
 });
