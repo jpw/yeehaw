@@ -8,7 +8,7 @@ module.exports = function authSuccessView(context) {
 		<h1>${context.title}</h1>
 		<p>
 			${context.app.name} was added to Slack.
-			Now you can go and race some horses, use the slash command:
+			Now you can go and race some things, use the slash command:
 		</p>
 		<pre class="slash-command">/race</pre>
 	`);

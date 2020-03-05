@@ -1,17 +1,24 @@
 'use strict';
 
+const raceConfig = require('../config/race');
+const racerConfig = require('../config/racer');
 const adjectives = require('../lib/adjectives');
 const nouns = require('../lib/nouns');
+const names = require('../lib/names');
 const sample = require('lodash/sample');
 
-const horseMovement = [1, 1, 2, 2, 3, 4];
 const defaultEmoji = ':horse_racing:';
-
 module.exports = function initRaceModel(app) {
 	const {Schema} = app;
 
 	function generateHorseName() {
-		return `${sample(adjectives)} ${sample(nouns)}`;
+		return racerConfig.HUMAN_NAMES
+			? `${sample(adjectives)} ${sample(names)}`
+			: `${sample(adjectives)} ${sample(nouns)}`;
+	}
+
+	function generateHorseEmoji() {
+		return sample(racerConfig.EMOJIS);
 	}
 
 	const horseSchema = new Schema({
@@ -33,6 +40,10 @@ module.exports = function initRaceModel(app) {
 		},
 		finishingPosition: {
 			type: Number
+		},
+		emoji: {
+			type: String,
+			default: generateHorseEmoji
 		}
 	});
 
@@ -100,7 +111,7 @@ module.exports = function initRaceModel(app) {
 		switch (this.phase) {
 			case 'betting':
 				return [
-					markdownSectionBlock(`Please place your bets! You can bet on one horse and change the bet until the race commences (in 30 seconds)`),
+					markdownSectionBlock(`Please place your bets! You can bet on one ${racerConfig.DESCRIPTION} and change the bet until the race commences (in ${raceConfig.BETTING_WINDOW_SECS} seconds)`),
 					{type: 'divider'},
 					...this.horses.map(horse => horse.renderForSlack(true)),
 					{type: 'divider'},
@@ -108,7 +119,7 @@ module.exports = function initRaceModel(app) {
 				];
 			case 'racing':
 				return [
-					markdownSectionBlock(`The race is on!\nDon't forget to cheer on your horse!`),
+					markdownSectionBlock(`The race is on!\nDon't forget to cheer on your ${racerConfig.DESCRIPTION}!`),
 					{type: 'divider'},
 					...this.horses.map(horse => horse.renderForSlack()),
 					{type: 'divider'},
@@ -131,7 +142,7 @@ module.exports = function initRaceModel(app) {
 					{type: 'divider'},
 					...this.horses.map(horse => horse.renderForSlack()),
 					{type: 'divider'},
-					markdownSectionBlock(`Well done ${winningBetterNames.join(', ')} for betting on the right horse.`),
+					markdownSectionBlock(`Well done ${winningBetterNames.join(', ')} for betting on the right ${racerConfig.DESCRIPTION}.`),
 					markdownContextBlock(`*Race organiser:* <@${this.userId}>`)
 				];
 		}
@@ -149,7 +160,7 @@ module.exports = function initRaceModel(app) {
 		}, 1);
 		this.horses.forEach(horse => {
 			if (horse.distanceFromFinish > 0) {
-				horse.distanceFromFinish -= sample(horseMovement);
+				horse.distanceFromFinish -= sample(racerConfig.POSSIBLE_MOVES_PER_TICK);
 			}
 			if (!horse.hasFinished && horse.distanceFromFinish <= 0) {
 				horse.finishingPosition = nextFinishingPosition;
@@ -175,7 +186,7 @@ module.exports = function initRaceModel(app) {
 		await this.save();
 
 		// Wait for bets to be placed before beginning the race
-		await timer(1000 * 30);
+		await timer(1000 * raceConfig.BETTING_WINDOW_SECS);
 
 		// Start the race!
 		this.phase = 'racing';
